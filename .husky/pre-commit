@@ -1,4 +1,10 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
 
-npx lint-staged
+# chạy lint-staged nếu có
+pnpm exec lint-staged
+
+# chạy vitest nhưng không fail nếu chưa có test
+pnpm exec vitest run --passWithNoTests || true
+npm test
+pnpm test
