@@ -1,29 +1,44 @@
-import {Request, Response} from "express"
-import { AuthService } from "../services/auth.service"
+import { Request, Response, NextFunction } from 'express';
+import { AuthService } from '../services/auth.service';
+import { HttpException } from '../exceptions/HttpException';
 
 const authService = new AuthService();
 
-export class AuthController{
-    async login(req: Request, res: Response){
-        const {email, password} = req.body;
+export class AuthController {
+  async login(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email, password } = req.body;
+      const user = await authService.validateUser(email, password);
+      if (!user) {
+        throw new HttpException(401, 'INVALID_CREDENTIALS', 'Incorrect email or password.');
+      }
 
-        const user = await authService.validateUser(email, password);
-        if(!user) return res.status(401).json({message: "Email hoặc mật khẩu không đúng."})
-
-        const tokens = authService.generateTokens(user.id);
-        await authService.saveRefreshToken(user, tokens.refreshToken);
-        return res.json(tokens);
+      const tokens = authService.generateTokens(user.id);
+      await authService.saveRefreshToken(user, tokens.refreshToken);
+      res.json(tokens);
+    } catch (err) {
+      next(err);
     }
+  }
 
-    async refreshToken(req: Request, res: Response){
-        const {refreshToken} = req.body;
-        if(!refreshToken) return res.status(401).json({message: "Lỗi token."});
-        const user = await authService.verifyRefreshToken(refreshToken);
-        if(!user) return res.status(401).json({message: "Token không hợp lệ"})
+  async refreshToken(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { refreshToken } = req.body;
+      if (!refreshToken) {
+        throw new HttpException(401, 'TOKEN_NOT_FOUND', 'Refresh token not provided');
+      }
 
-        const tokens = authService.generateTokens(user.id);
-        await authService.saveRefreshToken(user, tokens.refreshToken);
+      const user = await authService.verifyRefreshToken(refreshToken);
+      if (!user) {
+        throw new HttpException(401, 'INVALID_TOKEN', 'Refresh token invalid');
+      }
 
-        return res.json(tokens);
+      const tokens = authService.generateTokens(user.id);
+      await authService.saveRefreshToken(user, tokens.refreshToken);
+
+      res.json(tokens);
+    } catch (err) {
+      next(err);
     }
+  }
 }
