@@ -2,9 +2,11 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { AppDataSource } from '../config/data-source';
 import { User } from '../entities/User.entity';
+// import {sendMail} from "../utils/mail.util"
 
 const ACCESS_SECRET = 'access_secret';
 const REFRESh_SECRET = 'refresh_secret';
+const otpStore = new Map<string, { otp: string; data: any; expires: number }>();
 
 export class AuthService {
   private userRepo = AppDataSource.getRepository(User);
@@ -47,6 +49,11 @@ export class AuthService {
   async register(name: string, email: string, password: string) {
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expires = Date.now() + 2 * 60 * 1000;
+
+      otpStore.set(email, { otp, data: { name, email, password: hashedPassword }, expires });
+
       const newUser = new User();
       newUser.name = name;
       newUser.email = email;

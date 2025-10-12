@@ -13,7 +13,7 @@ export class AuthController {
       }
       const user = await authService.validateEmail(email);
       if (user) {
-        throw new HttpException(401, 'INVALID_EMAIL', 'This email has been registered');
+        throw new HttpException(400, 'EMAIL_EXISTS', 'This email has been registered');
       }
       const newUser = await authService.register(username, email, password);
       if (!newUser) throw new HttpException(500, 'REGISTER_FAILED', 'Cannot create user');
