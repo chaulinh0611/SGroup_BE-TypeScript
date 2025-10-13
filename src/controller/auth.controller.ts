@@ -12,7 +12,7 @@ export class AuthController {
         throw new HttpException(401, 'INVALID_PASSWORD', 'Password does not match');
       }
       const user = await authService.validateEmail(email);
-      if (user) {
+      if (!user) {
         throw new HttpException(400, 'EMAIL_EXISTS', 'This email has been registered');
       }
       const newUser = await authService.register(username, email, password);

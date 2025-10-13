@@ -2,26 +2,33 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { AppDataSource } from '../config/data-source';
 import { User } from '../entities/User.entity';
-// import {sendMail} from "../utils/mail.util"
+import { Role } from '../entities/Role.entity';
+// import { HttpException } from '../middlwares/errorHandler';
+import { mailService } from './mail.service';
 
+const VERIFY_SECRET = 'verify_secret';
 const ACCESS_SECRET = 'access_secret';
 const REFRESh_SECRET = 'refresh_secret';
-const otpStore = new Map<string, { otp: string; data: any; expires: number }>();
 
 export class AuthService {
   private userRepo = AppDataSource.getRepository(User);
+  private roleRepo = AppDataSource.getRepository(Role);
 
   async validateUser(email: string, password: string) {
-    const user = await this.userRepo.findOne({ where: { email } });
+    const user = await this.userRepo.findOne({ where: { email }, relations: ['role'] });
     if (!user) return null;
 
     const match = await bcrypt.compare(password, user.password);
     return match ? user : null;
   }
+
   async validateEmail(email: string) {
-    const user = await this.userRepo.findOne({ where: { email } });
-    if (!user) return null;
-    else return user;
+    const existing = await this.userRepo.findOne({ where: { email } });
+    return existing ? false : true;
+  }
+
+  async validatePassword(password: string): Promise<boolean> {
+    return password.length >= 8 && /[!@#$%^&*(),.?":{}|<>]/.test(password);
   }
 
   generateTokens(userId: string) {
@@ -48,21 +55,46 @@ export class AuthService {
 
   async register(name: string, email: string, password: string) {
     try {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      const expires = Date.now() + 2 * 60 * 1000;
+      const emailValidate = await this.validateEmail(email);
+      if (!emailValidate) throw new Error('Email already exists');
 
-      otpStore.set(email, { otp, data: { name, email, password: hashedPassword }, expires });
+      const passwordValidate = await this.validatePassword(password);
+      if (!passwordValidate)
+        throw new Error('Password must be at least 8 characters long and contain a special character');
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      let userRole = await this.roleRepo.findOne({ where: { name: 'USER' } });
+      if (!userRole) {
+        userRole = this.roleRepo.create({
+          name: 'USER',
+          description: 'Default role for new users',
+        });
+        await this.roleRepo.save(userRole);
+      }
 
       const newUser = new User();
       newUser.name = name;
       newUser.email = email;
       newUser.password = hashedPassword;
+      newUser.role = [userRole];
+      newUser.isActive = false;
+
       const savedUser = await this.userRepo.save(newUser);
+
+      const token = jwt.sign({ userId: savedUser.id }, VERIFY_SECRET, { expiresIn: '1d' });
+      const activationLink = `${process.env.FRONTEND_URL}/verify?token=${token}`;
+
+      try {
+        await mailService.sendActivationEmail(email, activationLink);
+      } catch (mailError) {
+        console.error('Email send failed, rolling back user:', mailError);
+        await this.userRepo.remove(savedUser);
+        throw new Error('Cannot send activation email');
+      }
       delete savedUser.password;
       return savedUser;
     } catch (err) {
-      console.error(err);
+      console.error('Register error:', err);
       return null;
     }
   }

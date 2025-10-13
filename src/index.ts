@@ -5,7 +5,9 @@ import { setupSwagger } from './swagger';
 import healthRouter from './routes/health';
 import userRouter from './routes/user';
 import authRouter from './routes/auth.routes';
-
+import { errorHandler } from './middlwares/errorHandler';
+import dotenv from 'dotenv';
+dotenv.config();
 AppDataSource.initialize()
   .then(() => console.log('📦 DB connected'))
   .catch((err) => console.error('DB Error: ', err));
@@ -20,7 +22,7 @@ app.use('/health', healthRouter);
 app.use('/users', userRouter);
 
 app.use('/auth', authRouter);
-
+app.use(errorHandler);
 // swagger
 setupSwagger(app);
 
