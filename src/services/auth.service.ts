@@ -3,8 +3,9 @@ import jwt from 'jsonwebtoken';
 import { AppDataSource } from '../config/data-source';
 import { User } from '../entities/User.entity';
 import { Role } from '../entities/Role.entity';
+import { HttpException } from '../exceptions/HttpException';
 // import { HttpException } from '../middlwares/errorHandler';
-import { mailService } from './mail.service';
+import { MailService } from './mail.service';
 
 const VERIFY_SECRET = 'verify_secret';
 const ACCESS_SECRET = 'access_secret';
@@ -82,9 +83,10 @@ export class AuthService {
       const savedUser = await this.userRepo.save(newUser);
 
       const token = jwt.sign({ userId: savedUser.id }, VERIFY_SECRET, { expiresIn: '1d' });
-      const activationLink = `${process.env.FRONTEND_URL}/verify?token=${token}`;
+      const activationLink = `${process.env.BASE_URL}/auth/verify?token=${token}`;
 
       try {
+        const mailService = new MailService();
         await mailService.sendActivationEmail(email, activationLink);
       } catch (mailError) {
         console.error('Email send failed, rolling back user:', mailError);
@@ -96,6 +98,41 @@ export class AuthService {
     } catch (err) {
       console.error('Register error:', err);
       return null;
+    }
+  }
+
+  async verifyAccount(token: string) {
+    if (!token) {
+      throw new HttpException(400, 'TOKEN_MISSING', 'Missing activation token');
+    }
+
+    try {
+      // Giải mã token
+      const payload = jwt.verify(token, VERIFY_SECRET) as { userId: string };
+
+      const user = await this.userRepo.findOne({ where: { id: payload.userId } });
+      if (!user) {
+        throw new HttpException(404, 'USER_NOT_FOUND', 'User not found');
+      }
+
+      // Kiểm tra nếu đã kích hoạt
+      if (user.isActive) {
+        return { alreadyActive: true };
+      }
+
+      // Kích hoạt tài khoản
+      user.isActive = true;
+      await this.userRepo.save(user);
+
+      return { alreadyActive: false };
+    } catch (err: any) {
+      if (err.name === 'TokenExpiredError') {
+        throw new HttpException(401, 'TOKEN_EXPIRED', 'Activation link expired');
+      } else if (err.name === 'JsonWebTokenError') {
+        throw new HttpException(401, 'TOKEN_INVALID', 'Invalid activation token');
+      } else {
+        throw err;
+      }
     }
   }
 }

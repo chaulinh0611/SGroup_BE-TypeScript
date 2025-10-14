@@ -3,7 +3,6 @@ import { AuthService } from '../services/auth.service';
 import { HttpException } from '../exceptions/HttpException';
 
 const authService = new AuthService();
-
 export class AuthController {
   async register(req: Request, res: Response, next: NextFunction) {
     try {
@@ -54,6 +53,18 @@ export class AuthController {
       await authService.saveRefreshToken(user, tokens.refreshToken);
 
       res.json(tokens);
+    } catch (err) {
+      next(err);
+    }
+  }
+  async verifyAccount(req: Request, res: Response, next: NextFunction) {
+    try {
+      const token = req.query.token as string;
+      const result = await authService.verifyAccount(token);
+
+      const message = result.alreadyActive ? 'Account is already activated.' : 'Account activated successfully.';
+
+      return res.status(200).json({ success: true, message });
     } catch (err) {
       next(err);
     }

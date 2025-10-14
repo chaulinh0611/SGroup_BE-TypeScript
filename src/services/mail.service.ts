@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer';
 
 export class MailService {
   private transporter;
+
   constructor() {
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -15,18 +16,19 @@ export class MailService {
   }
 
   async sendActivationEmail(to: string, activationLink: string) {
+    console.log('sendEmail1!!!');
+    console.log('Email user:', process.env.EMAIL_USER);
     const mailOptions = {
       from: `<${process.env.EMAIL_USER}>`,
       to,
-      subject: 'Active your account',
+      subject: 'Activate your account',
       html: `
-            <a href="${activationLink}" 
-            style="display:inline-block;padding:10px 20px;background:#4CAF50;color:white;text-decoration:none;border-radius:5px;">
-            Kích hoạt tài khoản
-            </a>
-            `,
+        <a href="${activationLink}" 
+        style="display:inline-block;padding:10px 20px;background:#4CAF50;color:white;text-decoration:none;border-radius:5px;">
+        Activate your account
+        </a>
+      `,
     };
     await this.transporter.sendMail(mailOptions);
   }
 }
-export const mailService = new MailService();
