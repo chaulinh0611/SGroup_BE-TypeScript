@@ -6,10 +6,14 @@ import { Role } from '../entities/Role.entity';
 import { HttpException } from '../exceptions/HttpException';
 // import { HttpException } from '../middlwares/errorHandler';
 import { MailService } from './mail.service';
+import 'dotenv/config';
 
-const VERIFY_SECRET = 'verify_secret';
-const ACCESS_SECRET = 'access_secret';
-const REFRESh_SECRET = 'refresh_secret';
+const VERIFY_SECRET = process.env.VERIFY_SECRET!;
+const ACCESS_SECRET = process.env.ACCESS_SECRET!;
+const REFRESH_SECRET = process.env.REFRESH_SECRET!;
+
+console.log('ACCESS_SECRET in auth.service:', process.env.ACCESS_SECRET);
+console.log('REFRESH_SECRET in auth.service:', process.env.REFRESH_SECRET);
 
 export class AuthService {
   private userRepo = AppDataSource.getRepository(User);
@@ -34,7 +38,7 @@ export class AuthService {
 
   generateTokens(userId: string) {
     const accessToken = jwt.sign({ sub: userId }, ACCESS_SECRET, { expiresIn: '15m' });
-    const refreshToken = jwt.sign({ sub: userId }, REFRESh_SECRET, { expiresIn: '7d' });
+    const refreshToken = jwt.sign({ sub: userId }, REFRESH_SECRET, { expiresIn: '7d' });
     return { accessToken, refreshToken };
   }
 
@@ -45,7 +49,7 @@ export class AuthService {
 
   async verifyRefreshToken(token: string) {
     try {
-      const payload = jwt.verify(token, REFRESh_SECRET) as any;
+      const payload = jwt.verify(token, REFRESH_SECRET) as any;
       const user = await this.userRepo.findOne({ where: { id: payload.sub } });
       if (!user || user.refreshToken !== token) return null;
       return user;
