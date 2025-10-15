@@ -1,5 +1,5 @@
 import { Workspace } from '../entities/Workspace.entity';
-import { AppDataSource } from '../data-source';
+import { AppDataSource } from '../config/data-source';
 import { User } from '../entities/User.entity';
 
 const workspaceRepo = AppDataSource.getRepository(Workspace);

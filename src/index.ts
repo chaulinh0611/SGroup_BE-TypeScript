@@ -26,27 +26,27 @@ AppDataSource.initialize()
       AppDataSource.entityMetadatas.map((e) => e.name)
     );
 
-    console.log(
-      'Entities in DataSource:',
-      AppDataSource.entityMetadatas.map((e) => e.name)
-    );
-    // Seed roles & permissions
     await seedRoles();
     console.log('✅ Seed roles and permissions done');
 
-    // Start server
     const app = express();
     const port = process.env.PORT || 3000;
 
     app.use(express.json());
+    app.use(express.urlencoded({ extended: true }));
 
     // routers
     app.use('/health', healthRouter);
     app.use('/users', userRouter);
     app.use('/auth', authRouter);
     app.use('/workspaces', workspaceRouter);
-    app.use('/board', boardRouter);
+    app.use('/boards', boardRouter);
     app.use(errorHandler);
+
+    app.use((req, res, next) => {
+      console.log('🧾 Middleware order check - body:', req.body);
+      next();
+    });
 
     // swagger
     setupSwagger(app);

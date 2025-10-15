@@ -34,7 +34,7 @@ export const seedRoles = async () => {
   let adminRole = await roleRepo.findOne({ where: { name: 'ADMIN' }, relations: ['permissions'] });
   if (!adminRole) {
     adminRole = roleRepo.create({ name: 'ADMIN', permissions: permissionEntities });
-    await roleRepo.save(adminRole); // <- Lúc này TypeORM sẽ tự điền vào bảng roles_permissions_permissions
+    await roleRepo.save(adminRole);
   }
 
   // Tạo USER Role chỉ với quyền đọc
@@ -42,7 +42,7 @@ export const seedRoles = async () => {
   if (!userRole) {
     const readPerms = permissionEntities.filter((p) => p.name.includes(':read'));
     userRole = roleRepo.create({ name: 'USER', permissions: readPerms });
-    await roleRepo.save(userRole); // <- Lúc này cũng sẽ điền vào bảng trung gian
+    await roleRepo.save(userRole);
   }
 
   console.log('✅ Seed roles and permissions done!');

@@ -7,7 +7,7 @@ export const AppDataSource = new DataSource({
   port: 5433,
   username: 'postgres',
   password: '123456',
-  database: 'sgroupwebbe',
+  database: 'sgroupWebDB',
   entities: ['src/entity/*.ts'],
   synchronize: true,
   logging: true,

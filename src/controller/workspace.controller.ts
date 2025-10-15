@@ -7,9 +7,7 @@ const workspaceService = new WorkspaceService();
 export class WorkspaceController {
   async createWorkspace(req: Request, res: Response) {
     try {
-      console.log('createworkspace');
       const user = (req as any).user as User;
-      console.log('User: ' + user);
       const workspace = await workspaceService.createWorkspace(req.body, user);
       res.json(workspace);
     } catch (err) {

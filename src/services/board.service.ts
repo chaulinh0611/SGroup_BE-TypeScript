@@ -1,4 +1,4 @@
-import { AppDataSource } from '../data-source';
+import { AppDataSource } from '../config/data-source';
 import { Board } from '../entities/Board.entity';
 import { Workspace } from '../entities/Workspace.entity';
 
