@@ -5,6 +5,15 @@ import { setupSwagger } from './swagger';
 import healthRouter from './routes/health';
 import userRouter from './routes/user';
 import authRouter from './routes/auth.routes';
+import { errorHandler } from './middlewares/errorHandler';
+import dotenv from 'dotenv';
+import path from 'path';
+const envPath = path.resolve(__dirname, '../.env');
+dotenv.config({ path: envPath });
+
+console.log('🔍 Loaded .env from:', envPath);
+console.log('Email user:', process.env.EMAIL_USER);
+console.log('Email pass:', process.env.EMAIL_PASS ? 'EXISTS' : 'MISSING');
 
 AppDataSource.initialize()
   .then(() => console.log('📦 DB connected'))
@@ -20,7 +29,7 @@ app.use('/health', healthRouter);
 app.use('/users', userRouter);
 
 app.use('/auth', authRouter);
-
+app.use(errorHandler);
 // swagger
 setupSwagger(app);
 

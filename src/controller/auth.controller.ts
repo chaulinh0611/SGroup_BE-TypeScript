@@ -3,8 +3,24 @@ import { AuthService } from '../services/auth.service';
 import { HttpException } from '../exceptions/HttpException';
 
 const authService = new AuthService();
-
 export class AuthController {
+  async register(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email, password, username, confirmPassword } = req.body;
+      if (password != confirmPassword) {
+        throw new HttpException(401, 'INVALID_PASSWORD', 'Password does not match');
+      }
+      const user = await authService.validateEmail(email);
+      if (!user) {
+        throw new HttpException(400, 'EMAIL_EXISTS', 'This email has been registered');
+      }
+      const newUser = await authService.register(username, email, password);
+      if (!newUser) throw new HttpException(500, 'REGISTER_FAILED', 'Cannot create user');
+      return res.status(201).json({ message: 'Register success', user: newUser });
+    } catch (err) {
+      next(err);
+    }
+  }
   async login(req: Request, res: Response, next: NextFunction) {
     try {
       const { email, password } = req.body;
@@ -37,6 +53,18 @@ export class AuthController {
       await authService.saveRefreshToken(user, tokens.refreshToken);
 
       res.json(tokens);
+    } catch (err) {
+      next(err);
+    }
+  }
+  async verifyAccount(req: Request, res: Response, next: NextFunction) {
+    try {
+      const token = req.query.token as string;
+      const result = await authService.verifyAccount(token);
+
+      const message = result.alreadyActive ? 'Account is already activated.' : 'Account activated successfully.';
+
+      return res.status(200).json({ success: true, message });
     } catch (err) {
       next(err);
     }
