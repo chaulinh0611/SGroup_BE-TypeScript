@@ -21,6 +21,25 @@ export class AuthController {
       next(err);
     }
   }
+
+  async googleLogin(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        throw new HttpException(401, 'OAUTH_FAILED', 'Login with Google failed');
+      }
+      const tokens = authService.generateTokens((user as any).id);
+      await authService.saveRefreshToken(user as any, tokens.refreshToken);
+      return res.json({
+        message: 'Google login success',
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        user,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
   async login(req: Request, res: Response, next: NextFunction) {
     try {
       const { email, password } = req.body;

@@ -111,7 +111,6 @@ export class AuthService {
     }
 
     try {
-      // Giải mã token
       const payload = jwt.verify(token, VERIFY_SECRET) as { userId: string };
 
       const user = await this.userRepo.findOne({ where: { id: payload.userId } });
@@ -119,12 +118,10 @@ export class AuthService {
         throw new HttpException(404, 'USER_NOT_FOUND', 'User not found');
       }
 
-      // Kiểm tra nếu đã kích hoạt
       if (user.isActive) {
         return { alreadyActive: true };
       }
 
-      // Kích hoạt tài khoản
       user.isActive = true;
       await this.userRepo.save(user);
 
