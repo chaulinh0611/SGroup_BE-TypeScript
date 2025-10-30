@@ -4,12 +4,15 @@ import { AppDataSource } from '../config/data-source';
 import { User } from '../entities/User.entity';
 import { Role } from '../entities/Role.entity';
 import { HttpException } from '../exceptions/HttpException';
-// import { HttpException } from '../middlwares/errorHandler';
 import { MailService } from './mail.service';
+import 'dotenv/config';
 
-const VERIFY_SECRET = 'verify_secret';
-const ACCESS_SECRET = 'access_secret';
-const REFRESh_SECRET = 'refresh_secret';
+const VERIFY_SECRET = process.env.VERIFY_SECRET!;
+const ACCESS_SECRET = process.env.ACCESS_SECRET!;
+const REFRESH_SECRET = process.env.REFRESH_SECRET!;
+
+console.log('ACCESS_SECRET in auth.service:', process.env.ACCESS_SECRET);
+console.log('REFRESH_SECRET in auth.service:', process.env.REFRESH_SECRET);
 
 export class AuthService {
   private userRepo = AppDataSource.getRepository(User);
@@ -31,10 +34,13 @@ export class AuthService {
   async validatePassword(password: string): Promise<boolean> {
     return password.length >= 8 && /[!@#$%^&*(),.?":{}|<>]/.test(password);
   }
+  generateAccessToken(userId: string) {
+    return jwt.sign({ sub: userId }, ACCESS_SECRET, { expiresIn: '1m' });
+  }
 
   generateTokens(userId: string) {
-    const accessToken = jwt.sign({ sub: userId }, ACCESS_SECRET, { expiresIn: '15m' });
-    const refreshToken = jwt.sign({ sub: userId }, REFRESh_SECRET, { expiresIn: '7d' });
+    const accessToken = jwt.sign({ sub: userId }, ACCESS_SECRET, { expiresIn: '1m' });
+    const refreshToken = jwt.sign({ sub: userId }, REFRESH_SECRET, { expiresIn: '3m' });
     return { accessToken, refreshToken };
   }
 
@@ -45,7 +51,7 @@ export class AuthService {
 
   async verifyRefreshToken(token: string) {
     try {
-      const payload = jwt.verify(token, REFRESh_SECRET) as any;
+      const payload = jwt.verify(token, REFRESH_SECRET) as any;
       const user = await this.userRepo.findOne({ where: { id: payload.sub } });
       if (!user || user.refreshToken !== token) return null;
       return user;
@@ -107,7 +113,6 @@ export class AuthService {
     }
 
     try {
-      // Giải mã token
       const payload = jwt.verify(token, VERIFY_SECRET) as { userId: string };
 
       const user = await this.userRepo.findOne({ where: { id: payload.userId } });
@@ -115,12 +120,10 @@ export class AuthService {
         throw new HttpException(404, 'USER_NOT_FOUND', 'User not found');
       }
 
-      // Kiểm tra nếu đã kích hoạt
       if (user.isActive) {
         return { alreadyActive: true };
       }
 
-      // Kích hoạt tài khoản
       user.isActive = true;
       await this.userRepo.save(user);
 
@@ -134,5 +137,16 @@ export class AuthService {
         throw err;
       }
     }
+  }
+  async getUserById(userId: string) {
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      relations: ['role'],
+    });
+    if (user) {
+      delete user.password;
+      return user;
+    }
+    return null;
   }
 }
