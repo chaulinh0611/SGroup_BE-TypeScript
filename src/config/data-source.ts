@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import { User } from '../entities/User.entity';
 import { Workspace } from '../entities/Workspace.entity';
@@ -16,7 +17,7 @@ export const AppDataSource = new DataSource({
   username: 'postgres',
   password: '123456',
   database: 'sgroupWebDB',
-  entities: [User, Workspace, Board, List, Card, Comment, Notification, Role, Permission],
   synchronize: true,
   logging: true,
+  entities: [User, Workspace, Board, List, Card, Comment, Notification, Role, Permission],
 });
