@@ -68,10 +68,14 @@ export class AuthController {
         throw new HttpException(401, 'INVALID_TOKEN', 'Refresh token invalid');
       }
 
-      const tokens = authService.generateTokens(user.id);
-      await authService.saveRefreshToken(user, tokens.refreshToken);
+      const newAccessToken = authService.generateAccessToken(user.id);
 
-      res.json(tokens);
+      console.log('New access token:', newAccessToken);
+
+      res.json({
+        accessToken: newAccessToken,
+        refreshToken,
+      });
     } catch (err) {
       next(err);
     }
@@ -84,6 +88,18 @@ export class AuthController {
       const message = result.alreadyActive ? 'Account is already activated.' : 'Account activated successfully.';
 
       return res.status(200).json({ success: true, message });
+    } catch (err) {
+      next(err);
+    }
+  }
+  async getUser(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).userId;
+      const user = await authService.getUserById(userId);
+      if (!user) {
+        throw new HttpException(404, 'USER_NOT_FOUND', 'User not found');
+      }
+      return res.json(user);
     } catch (err) {
       next(err);
     }

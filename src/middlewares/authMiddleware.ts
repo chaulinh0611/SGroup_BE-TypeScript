@@ -14,12 +14,12 @@ export const verifyToken = async (req: Request, res: Response, next: NextFunctio
 
     const secret = process.env.ACCESS_SECRET;
     if (!secret) {
-      console.error('❌ ACCESS_SECRET is missing');
+      console.error('ACCESS_SECRET is missing');
       return res.status(500).json({ message: 'Server misconfiguration' });
     }
 
     if (!AppDataSource.isInitialized) {
-      console.log('⚠️ AppDataSource not initialized. Initializing now...');
+      console.log(' AppDataSource not initialized. Initializing now...');
       await AppDataSource.initialize();
     }
 

@@ -10,7 +10,7 @@ import boardRouter from './routes/board.routes';
 import { seedRoles } from './utils/seedRoles';
 import { errorHandler } from './middlewares/errorHandler';
 import dotenv from 'dotenv';
-// import cors from 'cors';
+import cors from 'cors';
 import path from 'path';
 
 const envPath = path.resolve(__dirname, '../.env');
@@ -29,10 +29,12 @@ AppDataSource.initialize()
     const { default: passport } = await import('./config/passport.config');
     const app = express();
 
-    // app.use(cors({
-    //   origin: 'http://localhost:5173',
-    //   credentials: true,
-    // }));
+    app.use(
+      cors({
+        origin: 'http://localhost:5173',
+        credentials: true,
+      })
+    );
 
     app.use(passport.initialize());
 

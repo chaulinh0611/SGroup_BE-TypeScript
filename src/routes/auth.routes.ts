@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import passport from '../config/passport.config';
 import { AuthController } from '../controller/auth.controller';
-
+import { verifyToken } from '../middlewares/authMiddleware';
 /**
  * @swagger
  * /api/auth/login:
@@ -39,4 +39,5 @@ router.post('/register', (req, res, next) => controller.register(req, res, next)
 router.post('/login', (req, res, next) => controller.login(req, res, next));
 router.post('/refresh', (req, res, next) => controller.refreshToken(req, res, next));
 router.get('/verify', (req, res, next) => controller.verifyAccount(req, res, next));
+router.get('/me', verifyToken, (req, res, next) => controller.getUser(req, res, next));
 export default router;

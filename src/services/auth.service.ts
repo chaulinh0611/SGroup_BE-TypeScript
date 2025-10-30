@@ -4,7 +4,6 @@ import { AppDataSource } from '../config/data-source';
 import { User } from '../entities/User.entity';
 import { Role } from '../entities/Role.entity';
 import { HttpException } from '../exceptions/HttpException';
-// import { HttpException } from '../middlwares/errorHandler';
 import { MailService } from './mail.service';
 import 'dotenv/config';
 
@@ -35,10 +34,13 @@ export class AuthService {
   async validatePassword(password: string): Promise<boolean> {
     return password.length >= 8 && /[!@#$%^&*(),.?":{}|<>]/.test(password);
   }
+  generateAccessToken(userId: string) {
+    return jwt.sign({ sub: userId }, ACCESS_SECRET, { expiresIn: '1m' });
+  }
 
   generateTokens(userId: string) {
-    const accessToken = jwt.sign({ sub: userId }, ACCESS_SECRET, { expiresIn: '15m' });
-    const refreshToken = jwt.sign({ sub: userId }, REFRESH_SECRET, { expiresIn: '7d' });
+    const accessToken = jwt.sign({ sub: userId }, ACCESS_SECRET, { expiresIn: '1m' });
+    const refreshToken = jwt.sign({ sub: userId }, REFRESH_SECRET, { expiresIn: '3m' });
     return { accessToken, refreshToken };
   }
 
@@ -135,5 +137,16 @@ export class AuthService {
         throw err;
       }
     }
+  }
+  async getUserById(userId: string) {
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      relations: ['role'],
+    });
+    if (user) {
+      delete user.password;
+      return user;
+    }
+    return null;
   }
 }
